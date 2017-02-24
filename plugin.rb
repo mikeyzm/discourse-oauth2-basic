@@ -78,6 +78,7 @@ class OAuth2BasicAuthenticator < ::Auth::OAuth2Authenticator
       json_walk(result, user_json, :username)
       json_walk(result, user_json, :name)
       json_walk(result, user_json, :email)
+      json_walk(result, user_json, :avatar)
     end
 
     result
@@ -105,12 +106,25 @@ class OAuth2BasicAuthenticator < ::Auth::OAuth2Authenticator
       end
     end
 
-    result.extra_data = { oauth2_basic_user_id: user_details[:user_id] }
+    result.extra_data = { oauth2_basic_user_id: user_details[:user_id], oauth2_basic_user_avatar: user_details[:avatar] }
+
+    retrieve_avatar(result.user, user_details[:avatar])
+
     result
+  end
+
+  def retrieve_avatar(user, image_url)
+    return unless user
+    return unless image_url
+    return if user.user_avatar.try(:custom_upload_id).present?
+
+    Jobs.enqueue(:download_avatar_from_url, url: image_url, user_id: user.id, override_gravatar: true)
   end
 
   def after_create_account(user, auth)
     ::PluginStore.set("oauth2_basic", "oauth2_basic_user_#{auth[:extra_data][:oauth2_basic_user_id]}", {user_id: user.id })
+
+    retrieve_avatar(user, auth[:extra_data][:oauth2_basic_user_avatar])
   end
 end
 
@@ -122,7 +136,7 @@ auth_provider title_setting: "oauth2_button_title",
 register_css <<CSS
 
   button.btn-social.oauth2_basic {
-    background-color: #6d6d6d;
+    background-color: #eb6363;
   }
 
 CSS
