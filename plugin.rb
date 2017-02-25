@@ -99,6 +99,10 @@ class OAuth2BasicAuthenticator < ::Auth::OAuth2Authenticator
     current_info = ::PluginStore.get("oauth2_basic", "oauth2_basic_user_#{user_details[:user_id]}")
     if current_info
       result.user = User.where(id: current_info[:user_id]).first
+      user = User.find_by(result.user.id)
+      if user.custom_fields['sync_username'] != '1'
+        sync_username(user, result.username)
+      end
     elsif SiteSetting.oauth2_email_verified?
       result.user = User.where(email: Email.downcase(result.email)).first
       if result.user && user_details[:user_id]
@@ -113,6 +117,12 @@ class OAuth2BasicAuthenticator < ::Auth::OAuth2Authenticator
     result
   end
 
+  def sync_username(user, _username)
+    user.username = UserNameSuggester.suggest(_username)
+    user.custom_fields['sync_username'] = '1'
+    user.save!
+  end
+
   def retrieve_avatar(user, image_url)
     return unless user
     return unless image_url
@@ -123,7 +133,7 @@ class OAuth2BasicAuthenticator < ::Auth::OAuth2Authenticator
 
   def after_create_account(user, auth)
     ::PluginStore.set("oauth2_basic", "oauth2_basic_user_#{auth[:extra_data][:oauth2_basic_user_id]}", {user_id: user.id })
-
+    sync_username(user,auth[:username])
     retrieve_avatar(user, auth[:extra_data][:oauth2_basic_user_avatar])
   end
 end
@@ -131,7 +141,7 @@ end
 auth_provider title_setting: "oauth2_button_title",
               enabled_setting: "oauth2_enabled",
               authenticator: OAuth2BasicAuthenticator.new('oauth2_basic'),
-              message: "OAuth2"
+              message: "正在使用神社账号登录..."
 
 register_css <<CSS
 
