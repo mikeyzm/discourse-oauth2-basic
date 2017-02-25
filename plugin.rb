@@ -99,7 +99,7 @@ class OAuth2BasicAuthenticator < ::Auth::OAuth2Authenticator
     current_info = ::PluginStore.get("oauth2_basic", "oauth2_basic_user_#{user_details[:user_id]}")
     if current_info
       result.user = User.where(id: current_info[:user_id]).first
-      user = User.find_by(result.user.id)
+      user = User.find_by(id: result.user.id)
       if user.custom_fields['sync_username'] != '1'
         sync_username(user, result.username)
       end
