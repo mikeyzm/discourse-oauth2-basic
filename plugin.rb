@@ -100,7 +100,7 @@ class OAuth2BasicAuthenticator < ::Auth::OAuth2Authenticator
     if current_info
       result.user = User.where(id: current_info[:user_id]).first
       user = User.find_by(id: result.user.id)
-      if user.custom_fields['sync_username'] != '1'
+      if user.custom_fields['sync_username'] != result.username
         sync_username(user, result.username)
       end
     elsif SiteSetting.oauth2_email_verified?
@@ -119,7 +119,7 @@ class OAuth2BasicAuthenticator < ::Auth::OAuth2Authenticator
 
   def sync_username(user, _username)
     user.username = UserNameSuggester.suggest(_username)
-    user.custom_fields['sync_username'] = '1'
+    user.custom_fields['sync_username'] = _username
     user.save!
   end
 
