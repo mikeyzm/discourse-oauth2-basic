@@ -118,9 +118,11 @@ class OAuth2BasicAuthenticator < ::Auth::OAuth2Authenticator
   end
 
   def sync_username(user, _username)
-    user.username = UserNameSuggester.suggest(_username)
-    user.custom_fields['sync_username'] = _username
-    user.save!
+    if user.username != _username
+      user.username = UserNameSuggester.suggest(_username)
+      user.custom_fields['sync_username'] = _username
+      user.save!
+    end
   end
 
   def retrieve_avatar(user, image_url)
