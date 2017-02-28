@@ -100,8 +100,19 @@ class OAuth2BasicAuthenticator < ::Auth::OAuth2Authenticator
     if current_info
       result.user = User.where(id: current_info[:user_id]).first
       user = User.find_by(id: result.user.id)
-      if user.custom_fields['sync_username'] != result.username
-        sync_username(user, result.username)
+      if sso_record = user.single_sign_on_record
+        if sso_record.external_username != result.username
+          update_username(user, result.username)
+          sso_record.external_username = result.username
+          sso_record.save!
+        end
+      else
+        user.create_single_sign_on_record(
+            external_id: user_details[:user_id],
+            external_username: user_details[:username],
+            external_email: user_details[:email],
+            external_avatar_url: user_details[:avatar]
+        )
       end
     elsif SiteSetting.oauth2_email_verified?
       result.user = User.where(email: Email.downcase(result.email)).first
@@ -117,12 +128,9 @@ class OAuth2BasicAuthenticator < ::Auth::OAuth2Authenticator
     result
   end
 
-  def sync_username(user, _username)
-    if user.username != _username
+  def update_username(user, _username)
       user.username = UserNameSuggester.suggest(_username)
-      user.custom_fields['sync_username'] = _username
       user.save!
-    end
   end
 
   def retrieve_avatar(user, image_url)
