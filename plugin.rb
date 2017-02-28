@@ -108,6 +108,7 @@ class OAuth2BasicAuthenticator < ::Auth::OAuth2Authenticator
         end
       else
         user.create_single_sign_on_record(
+            last_payload: '',
             external_id: user_details[:user_id],
             external_username: user_details[:username],
             external_email: user_details[:email],
