@@ -101,7 +101,7 @@ class OAuth2BasicAuthenticator < ::Auth::OAuth2Authenticator
     result.email_valid = result.email.present? && SiteSetting.oauth2_email_verified?
 
     if User.find_by_email(result.email).nil?
-      user = User.create(email: result.email, username: result.username)
+      user = User.create(email: result.email, username: result.username, active: result.email_valid)
     end
 
     user = User.find_by_email(result.email)
