@@ -98,19 +98,14 @@ class OAuth2BasicAuthenticator < ::Auth::OAuth2Authenticator
     result.name = user_details[:name]
     result.username = user_details[:username]
     result.email = user_details[:email]
-    result.email_valid = result.email.present? && SiteSetting.oauth2_email_verified?
-
-    current_info = ::PluginStore.get("oauth2_basic", "oauth2_basic_user_#{user_details[:user_id]}")
-    if !current_info || !user = User.find_by(id: current_info[:user_id])
+  
+    if User.find_by_email(result.email).nil?
       user = User.create(email: result.email, username: result.username)
-    else
-      user = User.find_by_email(result.email)
-      if user && user_details[:user_id]
-        ::PluginStore.set("oauth2_basic", "oauth2_basic_user_#{user_details[:user_id]}", {user_id: user.id})
-      end
     end
     
-   if sso_record = user.single_sign_on_record
+    user = User.find_by_email(email)
+    
+    if sso_record = user.single_sign_on_record
       if sso_record.external_username != result.username
         update_username(user, result.username)
         sso_record.external_username = result.username
@@ -125,8 +120,6 @@ class OAuth2BasicAuthenticator < ::Auth::OAuth2Authenticator
           external_avatar_url: user_details[:avatar]
       )
     end
-
-    result.extra_data = { oauth2_basic_user_id: user_details[:user_id], oauth2_basic_user_avatar: user_details[:avatar] }
 
     retrieve_avatar(user, user_details[:avatar])
 
@@ -147,9 +140,7 @@ class OAuth2BasicAuthenticator < ::Auth::OAuth2Authenticator
   end
 
   def after_create_account(user, auth)
-    ::PluginStore.set("oauth2_basic", "oauth2_basic_user_#{auth[:extra_data][:oauth2_basic_user_id]}", {user_id: user.id })
     sync_username(user,auth[:username])
-    retrieve_avatar(user, auth[:extra_data][:oauth2_basic_user_avatar])
   end
 end
 
