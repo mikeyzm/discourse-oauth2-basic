@@ -99,12 +99,12 @@ class OAuth2BasicAuthenticator < ::Auth::OAuth2Authenticator
     result.username = user_details[:username]
     result.email = user_details[:email]
     result.email_valid = result.email.present? && SiteSetting.oauth2_email_verified?
+    
+    current_info = ::PluginStore.get("oauth2_basic", "oauth2_basic_user_#{user_details[:user_id]}")
 
-    if User.find_by_email(result.email).nil?
+    if !current_info || !user = User.where(id: current_info[:user_id]).first
       user = User.create(email: result.email, username: result.username, active: result.email_valid)
     end
-
-    user = User.where(email: Email.downcase(result.email)).first
 
     if sso_record = user.single_sign_on_record
       if sso_record.external_username != result.username
