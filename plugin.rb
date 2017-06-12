@@ -104,7 +104,7 @@ class OAuth2BasicAuthenticator < ::Auth::OAuth2Authenticator
       user = User.create(email: result.email, username: result.username)
     end
 
-    user = User.find_by_email(email)
+    user = User.find_by_email(result.email)
 
     if sso_record = user.single_sign_on_record
       if sso_record.external_username != result.username
