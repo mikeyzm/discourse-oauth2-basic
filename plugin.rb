@@ -110,6 +110,7 @@ class OAuth2BasicAuthenticator < ::Auth::OAuth2Authenticator
       if sso_record.external_username != result.username
         update_username(user, result.username)
         sso_record.external_username = result.username
+        sso_record.avatar_url = user_details[:avatar]
         sso_record.save!
       end
     else
