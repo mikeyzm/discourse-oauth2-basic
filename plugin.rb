@@ -97,7 +97,7 @@ class OAuth2BasicAuthenticator < ::Auth::OAuth2Authenticator
 
     result.name = user_details[:name]
     result.username = user_details[:username]
-    result.email = user_details[:email]
+    result.email = Email.downcase(user_details[:email])
     result.email_valid = result.email.present? && SiteSetting.oauth2_email_verified?
 
     if User.find_by_email(result.email).nil?
