@@ -100,7 +100,11 @@ class OAuth2BasicAuthenticator < ::Auth::OAuth2Authenticator
     result.email = Email.downcase(user_details[:email])
     result.email_valid = result.email.present? && SiteSetting.oauth2_email_verified?
 
-    user = User.find_by_email(result.email)
+    if User.find_by_email(result.email).nil?
+      user = User.create(email: result.email, username: result.username, active: result.email_valid)
+    end
+
+    result.user = user = User.where(email: result.email).first
 
     if sso_record = user.single_sign_on_record
       if sso_record.external_username != result.username
@@ -120,7 +124,6 @@ class OAuth2BasicAuthenticator < ::Auth::OAuth2Authenticator
     end
 
     retrieve_avatar(user, user_details[:avatar])
-    result.user = user
 
     result
   end
