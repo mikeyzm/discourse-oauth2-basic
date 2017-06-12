@@ -104,14 +104,14 @@ class OAuth2BasicAuthenticator < ::Auth::OAuth2Authenticator
       user = User.create(email: result.email, username: result.username, active: result.email_valid)
     end
 
-    result.user = user = User.where(email: result.email).first
+    user = User.find_by_email(result.email)
 
     if sso_record = user.single_sign_on_record
       if sso_record.external_username != result.username
         update_username(user, result.username)
         sso_record.external_username = result.username
       end
-      sso_record.avatar_url = user_details[:avatar]
+      sso_record.external_avatar_url = user_details[:avatar]
       sso_record.save!
     else
       user.create_single_sign_on_record(
@@ -124,6 +124,7 @@ class OAuth2BasicAuthenticator < ::Auth::OAuth2Authenticator
     end
 
     retrieve_avatar(user, user_details[:avatar])
+    result.user = user
 
     result
   end
